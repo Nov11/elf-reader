@@ -5,7 +5,6 @@
 #include <vector>
 #include <iomanip>
 #include <map>
-#include <assert.h>
 
 using namespace std;
 
@@ -128,21 +127,6 @@ void extractPhtable(Ehdr &header,
        (char *) &ptable[0]);
 }
 
-template<class Ehdr, class Phdr, class Shdr>
-void do_segment_info_printing(vector<Phdr> &ptable) {
-  printSegments<Phdr>(ptable);
-}
-
-template<class K, class V>
-typename map<K, V>::iterator lessOrEqual(map<K, V> &map, K key) {
-  auto ret = map.upper_bound(key);
-  if (ret == map.begin()) {
-    return map.end();
-  }
-  ret--;
-  return ret;
-};
-
 template<class Phdr, class Shdr>
 void do_projection_relation_printing(const vector<Phdr> &ph, const vector<Shdr> &sh, const char *names) {
   cout << "segment and section mapping relation" << endl;
@@ -150,32 +134,60 @@ void do_projection_relation_printing(const vector<Phdr> &ph, const vector<Shdr> 
     cout << "no projection relation due to insufficient ph or sh info" << endl;
     return;
   }
-  map<uint64_t, vector<string>> hash;
-  for (auto &item : ph) {
-    hash[item.p_vaddr] = {};
-  }
+  vector<vector<string>> result(ph.size());
   for (int i = 0; i < sh.size(); i++) {
-    auto &item = sh[i];
-    auto iter = lessOrEqual<uint64_t, vector<string>>(hash, item.sh_addr);
-    if (iter != hash.end()) {
-      iter->second.push_back(names ? names + item.sh_name : to_string(i));
-    } else {
-      cerr << "shaddr:" << item.sh_addr << " " << endl;
-      assert(false);
+    if (sh[i].sh_type == SHT_NULL) {
+      continue;
+    }
+    string n = names ? names + sh[i].sh_name : to_string(i);
+    uint64_t addr = sh[i].sh_addr;
+    for (int j = 0; j < ph.size(); j++) {
+      if (ph[j].p_type == PT_NULL) {
+        continue;
+      }
+      uint64_t lower = ph[j].p_vaddr;
+      uint64_t upper = ph[j].p_vaddr + ph[j].p_memsz;
+      if (addr >= lower && addr < upper) {
+        result[j].push_back(n);
+      }
     }
   }
 
-  int count = 0;
-  for (auto &item : hash) {
-    cout << setw(4) << "No. " << count << " ";
-    count++;
-    cout << setw(4) << item.first << "\t";
-    for (auto &inner : item.second) {
-      cout << inner << " ";
+  for (int i = 0; i < result.size(); i++) {
+    cout << setw(4) << i;
+    cout << "\t";
+    for (auto &item : result[i]) {
+      cout << item << " ";
     }
     cout << endl;
   }
-  cout << endl;
+
+//  map<uint64_t, vector<string>> hash;
+//  for (auto &item : ph) {
+//    hash[item.p_vaddr] = {};
+//  }
+//  for (int i = 0; i < sh.size(); i++) {
+//    auto &item = sh[i];
+//    auto iter = lessOrEqual<uint64_t, vector<string>>(hash, item.sh_addr);
+//    if (iter != hash.end()) {
+//      iter->second.push_back(names ? names + item.sh_name : to_string(i));
+//    } else {
+//      cerr << "shaddr:" << item.sh_addr << " " << endl;
+//      assert(false);
+//    }
+//  }
+//
+//  int count = 0;
+//  for (auto &item : hash) {
+//    cout << setw(4) << "No. " << count << " ";
+//    count++;
+//    cout << setw(4) << item.first << "\t";
+//    for (auto &inner : item.second) {
+//      cout << inner << " ";
+//    }
+//    cout << endl;
+//  }
+//  cout << endl;
   cout << "segment and section mapping relation ends" << endl;
 }
 template<class Ehdr, class Phdr, class Shdr>
@@ -202,9 +214,8 @@ void print_info(const vector<char> &content) {
   //program header info
   vector<Phdr> phtable;
   extractPhtable(header, initial, content, phtable);
-  do_segment_info_printing<Ehdr, Phdr, Shdr>(phtable);
-
-  //relation info
+  printSegments<Phdr>(phtable);
+  //mapping info
   do_projection_relation_printing<Phdr, Shdr>(phtable, shtable, names);
 }
 
