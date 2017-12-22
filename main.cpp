@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <iomanip>
+#include <map>
 
 using namespace std;
 
@@ -32,13 +34,14 @@ void printSegments(const vector<Phdr> &ptable) {
   cout << "segment info:" << endl;
   int count = 0;
   for (auto &item : ptable) {
-    cout << "No." << count;
+    cout << "No. " << count << "\t";
     count++;
     if (item.p_type == PT_NULL) {
       cout << "NULL segment" << endl;
       continue;
     }
-    cout << hex << "vaddr(hex):" << item.p_vaddr << " mem size(hex):" << item.p_memsz << dec << endl;
+    cout << hex << "vaddr(hex):" << setw(16) << item.p_vaddr << " mem size(hex):" << setw(16) << item.p_memsz << dec
+         << endl;
   }
   cout << "segment info ends" << endl;
 }
@@ -46,8 +49,12 @@ void printSegments(const vector<Phdr> &ptable) {
 template<class Shdr>
 void printSections(const vector<Shdr> &stable, const char *names) {
   cout << "section info:" << endl;
+  int count = 0;
 
   for (auto &item : stable) {
+    cout << "No. " << count << "\t";
+    count++;
+    cout << setw(20);
     if (item.sh_type == SHT_NULL) {
       cout << "NULL section" << endl;
       continue;
@@ -55,7 +62,8 @@ void printSections(const vector<Shdr> &stable, const char *names) {
     if (names) {
       cout << names + item.sh_name << " ";
     }
-    cout << hex << "vaddr(hex) : " << item.sh_addr << " size(hex):" << item.sh_size << dec << endl;
+    cout << hex << "vaddr(hex) : " << setw(16) << item.sh_addr << " size(hex):" << setw(16) << item.sh_size << dec
+         << endl;
   }
   cout << "section info ends." << endl;
 }
@@ -126,7 +134,10 @@ void do_segment_info_printing(vector<Phdr> &ptable) {
 
 template<class Phdr, class Shdr>
 void do_projection_relation_printing(const vector<Phdr> &ph, const vector<Shdr> &sh) {
-
+  map<uint64_t, vector<string>> hash;
+  for(auto & item : ph){
+    hash[item.]
+  }
 }
 template<class Ehdr, class Phdr, class Shdr>
 void print_info(const vector<char> &content) {
